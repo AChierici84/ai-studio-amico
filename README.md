@@ -2,6 +2,22 @@
 
 Applicazione educativa interattiva con un bot 2D animato che conversa con l'utente usando OpenAI.
 
+<img width="1501" height="891" alt="Screenshot 2026-03-18 170117" src="https://github.com/user-attachments/assets/326c2622-1ea5-4f3c-9c14-7f72c1544d2f" />
+In base alla classe , alla materia e all'argomento selezionato...
+
+<img width="1228" height="804" alt="Screenshot 2026-03-18 170148" src="https://github.com/user-attachments/assets/3df6b7fe-dbd9-469d-b593-c0ccd531700a" />
+
+<img width="1211" height="815" alt="Screenshot 2026-03-18 170221" src="https://github.com/user-attachments/assets/5701d35f-d1b0-48f6-9fb2-0c569fa9448c" />
+
+Propone 5 domande del livello relativo alla classe di appartenenza...
+
+<img width="1306" height="781" alt="Screenshot 2026-03-18 170244" src="https://github.com/user-attachments/assets/673e5b13-81d6-41c6-89dd-01f3dcd4f379" />
+
+E valuta le risposte (che possono essere scritte o dettate a voce).
+
+<img width="1215" height="819" alt="Screenshot 2026-03-18 170411" src="https://github.com/user-attachments/assets/2ff46898-2bde-432c-bdca-a0dabffad763" />
+
+
 ## Caratteristiche
 
 **Bot 2D Animato**
