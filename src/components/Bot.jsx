@@ -11,6 +11,11 @@ function Bot({ action = 'idle' }) {
     let timer = null
     let active = true
 
+    // Non muovere il robot mentre parla
+    if (action === 'speaking') {
+      return
+    }
+
     const run = () => {
       if (!active) return
 
@@ -33,7 +38,7 @@ function Bot({ action = 'idle' }) {
       active = false
       if (timer) clearTimeout(timer)
     }
-  }, [])
+  }, [action])
 
   // Cambio espressione e gesticulazione in base all'azione
   useEffect(() => {

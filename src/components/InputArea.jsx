@@ -6,6 +6,7 @@ function InputArea({ onSendMessage, isLoading }) {
   const [input, setInput] = useState('')
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef(null)
+  const listeningTimeoutRef = useRef(null)
 
   // Inizializza Web Speech API
   useEffect(() => {
@@ -18,10 +19,16 @@ function InputArea({ onSendMessage, isLoading }) {
 
       recognitionRef.current.onstart = () => {
         setIsListening(true)
+        // Ferma la registrazione dopo 30 secondi
+        if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current)
+        listeningTimeoutRef.current = setTimeout(() => {
+          recognitionRef.current.stop()
+        }, 30000)
       }
 
       recognitionRef.current.onend = () => {
         setIsListening(false)
+        if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current)
       }
 
       recognitionRef.current.onresult = (event) => {

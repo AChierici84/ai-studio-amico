@@ -12,9 +12,10 @@
   position: absolute;
   width: 520px;
   height: 520px;
-  bottom: 100px;
+  bottom: 50px;
   transform: translateX(-50%);
   transform-style: preserve-3d;
+  pointer-events: none;
 }
 
 .bot::before {

@@ -14,6 +14,18 @@ app.use(express.json())
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+const GRADE_LABELS = ['Insufficiente', 'Sufficiente', 'Discreto', 'Buono', 'Distinto', 'Ottimo']
+
+const mapScoreToGrade = (score) => {
+  if (!Number.isFinite(Number(score))) return 'Sufficiente'
+  const safeScore = Math.min(10, Math.max(1, Math.round(Number(score))))
+  if (safeScore <= 4) return 'Insufficiente'
+  if (safeScore <= 6) return 'Sufficiente'
+  if (safeScore === 7) return 'Discreto'
+  if (safeScore === 8) return 'Buono'
+  if (safeScore === 9) return 'Distinto'
+  return 'Ottimo'
+}
 
 const ensureApiKey = (res) => {
   if (!OPENAI_API_KEY) {
@@ -158,7 +170,7 @@ app.post('/api/evaluate-quiz', async (req, res) => {
     if (!ensureApiKey(res)) return
 
     const { classLevel, subject, topic, qa } = req.body
-    const prompt = `Valuta le risposte di uno studente di ${classLevel} su ${subject}, argomento ${topic}.\n\nDomande e risposte:\n${JSON.stringify(qa, null, 2)}\n\nRestituisci SOLO JSON valido con formato:\n{\n  "score": numero intero da 1 a 10,\n  "results": [\n    {"question":"...","answer":"...","isCorrect":true/false,"feedback":"Spiega in modo semplice l'errore o conferma cosa e corretto"}\n  ],\n  "summary":"breve sintesi motivante per il bambino"\n}`
+    const prompt = `Valuta le risposte di uno studente di ${classLevel} su ${subject}, argomento ${topic}.\n\nDomande e risposte:\n${JSON.stringify(qa, null, 2)}\n\nAssegna un voto qualitativo usando SOLO una di queste etichette: Insufficiente, Sufficiente, Discreto, Buono, Distinto, Ottimo.\n\nRestituisci SOLO JSON valido con formato:\n{\n  "grade": "Insufficiente|Sufficiente|Discreto|Buono|Distinto|Ottimo",\n  "results": [\n    {"question":"...","answer":"...","isCorrect":true/false,"feedback":"Spiega in modo semplice l'errore o conferma cosa e corretto"}\n  ],\n  "summary":"breve sintesi motivante per il bambino"\n}`
 
     const output = await callOpenAI([
       {
@@ -168,7 +180,7 @@ app.post('/api/evaluate-quiz', async (req, res) => {
       { role: 'user', content: prompt }
     ], { temperature: 0.2, maxTokens: 1400 })
 
-    const parsed = parseJsonFromText(output, { score: 6, results: [], summary: '' })
+    const parsed = parseJsonFromText(output, { grade: 'Sufficiente', results: [], summary: '' })
 
     const results = Array.isArray(parsed.results)
       ? parsed.results.slice(0, 5).map((item, idx) => ({
@@ -179,12 +191,12 @@ app.post('/api/evaluate-quiz', async (req, res) => {
         }))
       : []
 
-    const safeScore = Number.isFinite(Number(parsed.score))
-      ? Math.min(10, Math.max(1, Math.round(Number(parsed.score))))
-      : 6
+    const safeGrade = GRADE_LABELS.includes(parsed.grade)
+      ? parsed.grade
+      : mapScoreToGrade(parsed.score)
 
     res.json({
-      score: safeScore,
+      grade: safeGrade,
       results,
       summary: parsed.summary || ''
     })

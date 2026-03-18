@@ -5,7 +5,7 @@ import InputArea from './components/InputArea'
 import './App.css'
 
 function App() {
-  const [botMessage, setBotMessage] = useState('Ciao! Sono Micky, il tuo assistente. Prima di iniziare, che classe fai?')
+  const [botMessage, setBotMessage] = useState('Ciao! Sono Robo Studio, il tuo assistente per i compiti. Prima di iniziare, che classe fai?')
   const [isThinking, setIsThinking] = useState(false)
   const [botAction, setBotAction] = useState('idle') // idle, thinking, speaking, happy, confused
   const [phase, setPhase] = useState('askClass') // askClass | askSubject | askTopic | quiz | finished
@@ -124,9 +124,22 @@ function App() {
       qa
     })
 
+    const mapScoreToGrade = (score) => {
+      const numeric = Number(score)
+      if (!Number.isFinite(numeric)) return 'Sufficiente'
+      if (numeric <= 4) return 'Insufficiente'
+      if (numeric <= 6) return 'Sufficiente'
+      if (numeric < 8) return 'Discreto'
+      if (numeric < 9) return 'Buono'
+      if (numeric < 10) return 'Distinto'
+      return 'Ottimo'
+    }
+
+    const finalGrade = result.grade || mapScoreToGrade(result.score)
+
     const lines = []
     lines.push(`Hai completato il quiz su "${topic}".`)
-    lines.push(`Voto finale: ${result.score}/10`)
+    lines.push(`Voto finale: ${finalGrade}`)
     lines.push('')
 
     result.results.forEach((item, idx) => {
