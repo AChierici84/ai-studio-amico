@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import './Whiteboard.css'
 
-function Whiteboard({ text, images = [] }) {
+function Whiteboard({ text, images = [], isVisualLoading = false }) {
   const safeImages = Array.isArray(images) ? images.filter(Boolean).slice(0, 4) : []
 
   return (
@@ -14,6 +14,12 @@ function Whiteboard({ text, images = [] }) {
             {text || ''}
           </ReactMarkdown>
         </div>
+        {isVisualLoading && (
+          <div className="whiteboard-visual-loader" aria-live="polite" aria-label="Sto generando l'immagine">
+            <div className="whiteboard-visual-loader-spinner"></div>
+            <span>Sto preparando l'immagine...</span>
+          </div>
+        )}
         {safeImages.length > 0 && (
           <div className="whiteboard-previews" aria-label="Anteprime immagini suggerite">
             {safeImages.map((src, idx) => (

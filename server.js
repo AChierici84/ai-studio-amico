@@ -18,6 +18,8 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || 'gpt-image-1'
 const POLLINATIONS_IMAGE_URL = 'https://image.pollinations.ai/prompt/'
 const GRADE_LABELS = ['Insufficiente', 'Sufficiente', 'Discreto', 'Buono', 'Distinto', 'Ottimo']
+const IMAGE_STYLE_GUIDE = 'Stile visivo: fotografia educativa realistica, aspetto naturale, luce morbida, dettagli credibili, materiali e ambienti verosimili, composizione fotografica pulita, resa ad alta definizione, niente effetto cartoon o illustrazione.'
+const INFOGRAPHIC_STYLE_GUIDE = 'Stile visivo: infografica didattica moderna e realistica, pulita e professionale, layout chiaro, alta leggibilita, palette equilibrata, aspetto vicino a materiale scolastico premium.'
 
 const NON_EVALUABLE_PATTERNS = [
   /non\s+lo\s+so/i,
@@ -76,6 +78,12 @@ const buildSchemaHint = ({ schemaType = 'timeline', title = '', points = [] }) =
     safeTitle,
     basePoints
   }
+}
+
+const normalizeVisualType = (value = '') => {
+  const normalized = compactWords(value).toLowerCase()
+  const visualTypes = ['illustration', 'chart', 'map', 'table', 'schema', 'timeline', 'diagram']
+  return visualTypes.includes(normalized) ? normalized : 'illustration'
 }
 
 const mapScoreToGrade = (score) => {
@@ -198,22 +206,50 @@ const callOpenAIImage = async (prompt, options = {}) => {
   return `data:image/png;base64,${b64}`
 }
 
-const generateEducationalImage = async ({ area = 'study', classLevel = '', subject = '', visualQuery = '' }) => {
+const generateEducationalImage = async ({
+  area = 'study',
+  classLevel = '',
+  subject = '',
+  visualQuery = '',
+  reply = '',
+  imagePrompt = '',
+  visualType = 'illustration'
+}) => {
   const safeArea = area === 'review' ? 'ripasso' : 'studio guidato'
+  const safeVisualType = normalizeVisualType(visualType)
+  const visualTypePromptMap = {
+    illustration: 'Crea una immagine fotografica didattica realistica e molto chiara.',
+    chart: 'Crea un grafico didattico moderno e leggibile, con impostazione pulita e professionale.',
+    map: 'Crea una cartina o mappa didattica realistica, ordinata e facile da leggere.',
+    table: 'Crea una tabella visiva didattica elegante, ordinata e molto leggibile.',
+    schema: 'Crea uno schema didattico moderno, organizzato e facile da studiare.',
+    timeline: 'Crea una linea del tempo didattica moderna, ordinata e visivamente chiara.',
+    diagram: 'Crea un diagramma didattico moderno, ben strutturato e molto leggibile.'
+  }
+
+  const styleGuide = safeVisualType === 'illustration'
+    ? IMAGE_STYLE_GUIDE
+    : INFOGRAPHIC_STYLE_GUIDE
+
   const prompt = [
-    'Illustrazione didattica realistica e chiara, adatta a studenti.',
+    visualTypePromptMap[safeVisualType],
+    styleGuide,
     `Contesto: ${safeArea}.`,
     `Classe: ${classLevel || 'scuola secondaria'}.`,
     `Materia: ${subject || 'materie scolastiche'}.`,
     `Tema: ${visualQuery || 'concetto scolastico principale'}.`,
-    'Niente testo nell\'immagine, niente watermark, composizione pulita, colori leggibili, stile educativo.'
+    `Contenuto della spiegazione da rappresentare: ${stripUrlsFromText(reply || '') || 'spiegazione didattica pertinente'}.`,
+    `Prompt visuale preparato da OpenAI: ${imagePrompt || visualQuery || 'immagine didattica coerente con il testo'}.`,
+    safeVisualType === 'illustration'
+      ? 'Niente testo nell\'immagine, niente watermark, aspetto fotografico realistico, luce naturale, proporzioni credibili, anatomia umana corretta (volti completi, occhi interi, arti proporzionati), niente stile cartoon o pittorico.'
+      : 'Se utile inserisci solo etichette brevi e leggibili in italiano, niente watermark, layout pulito, forte coerenza con il testo spiegato, niente elementi decorativi inutili.'
   ].join(' ')
 
   try {
-    return await callOpenAIImage(prompt, { size: '1024x1024', quality: 'medium' })
+    return await callOpenAIImage(prompt, { size: '1024x1024', quality: 'high' })
   } catch (error) {
     const fallbackUrl = buildGeneratedImageFallback({
-      prompt: `${subject} ${visualQuery} illustrazione didattica`,
+      prompt: `${subject} ${imagePrompt || visualQuery || reply} ${safeVisualType} didattico`,
       seed: Date.now() % 100000
     })
 
@@ -230,15 +266,16 @@ const generateSchemaImage = async ({ schemaType = 'timeline', title = '', points
   const schema = buildSchemaHint({ schemaType, title, points })
   const prompt = [
     `Crea un ${schema.typeLabel} didattico pulito e leggibile per studenti.`,
+    INFOGRAPHIC_STYLE_GUIDE,
     `Titolo: ${schema.safeTitle}.`,
     `Materia: ${subject || 'materia scolastica'}.`,
     `Classe: ${classLevel || 'scuola secondaria'}.`,
     `Elementi da includere: ${schema.basePoints.join(', ')}.`,
-    'Design infografico semplice, sfondo chiaro, etichette brevi in italiano, senza personaggi cartoon.'
+    'Design infografico semplice, sfondo chiaro, etichette brevi in italiano, senza personaggi cartoon, forte equilibrio tra chiarezza e bellezza visiva.'
   ].join(' ')
 
   try {
-    return await callOpenAIImage(prompt, { size: '1024x1024', quality: 'medium' })
+    return await callOpenAIImage(prompt, { size: '1024x1024', quality: 'high' })
   } catch (error) {
     const fallbackUrl = buildGeneratedImageFallback({
       prompt: `${schema.typeLabel} ${schema.safeTitle} ${schema.basePoints.join(' ')} infografica scolastica`,
@@ -292,7 +329,7 @@ app.post('/api/chat', async (req, res) => {
       },
       {
         role: 'system',
-        content: `${areaPromptMap[safeArea]} Restituisci SOLO JSON valido nel formato: {"reply":"...","visualQuery":"...","needsSchema":true/false,"schemaType":"timeline|bar","schemaTitle":"...","schemaPoints":["..."]}. Regole: reply massimo 7 frasi. visualQuery breve (3-7 parole). Se area e review e il contenuto e sequenziale o basato su dati, needsSchema=true con schemaType timeline o bar e 3-6 schemaPoints sintetici.`
+        content: `${areaPromptMap[safeArea]} Restituisci SOLO JSON valido nel formato: {"reply":"...","visualQuery":"...","visualType":"illustration|chart|map|table|schema|timeline|diagram","imagePrompt":"...","needsSchema":true/false,"schemaType":"timeline|bar","schemaTitle":"...","schemaPoints":["..."]}. Regole: reply massimo 7 frasi. visualQuery breve (3-7 parole). imagePrompt deve essere un prompt visivo dettagliato e coerente con il testo scritto. Se l'utente chiede esplicitamente un grafico, una cartina, una tabella, uno schema, una timeline o un diagramma, visualType deve rispettare esattamente quella richiesta. Se area e review e il contenuto e sequenziale o basato su dati, needsSchema=true con schemaType timeline o bar e 3-6 schemaPoints sintetici.`
       },
       {
         role: 'system',
@@ -309,6 +346,8 @@ app.post('/api/chat', async (req, res) => {
     const parsed = parseJsonFromText(output, {
       reply: '',
       visualQuery: '',
+      visualType: 'illustration',
+      imagePrompt: '',
       needsSchema: false,
       schemaType: 'timeline',
       schemaTitle: '',
@@ -323,6 +362,8 @@ app.post('/api/chat', async (req, res) => {
     res.json({
       reply,
       visualQuery,
+      visualType: normalizeVisualType(parsed.visualType || 'illustration'),
+      imagePrompt: stripUrlsFromText(parsed.imagePrompt || '').trim(),
       needsSchema,
       schemaType: parsed.schemaType || 'timeline',
       schemaTitle: parsed.schemaTitle || '',
@@ -344,6 +385,8 @@ app.post('/api/generate-visuals', async (req, res) => {
       subject = '',
       message = '',
       reply = '',
+      imagePrompt = '',
+      visualType = 'illustration',
       visualQuery = '',
       needsSchema = false,
       schemaType = 'timeline',
@@ -361,14 +404,18 @@ app.post('/api/generate-visuals', async (req, res) => {
         area: safeArea,
         classLevel,
         subject,
-        visualQuery: compactWords(visualQuery || `${subject} ${message}`)
+        visualQuery: compactWords(visualQuery || `${subject} ${message}`),
+        reply,
+        imagePrompt,
+        visualType
       })
     ]
 
     const forceSchema = safeArea === 'review' && shouldSuggestReviewSchema(`${message} ${reply}`)
     const shouldGenerateSchema = safeArea === 'review' && (Boolean(needsSchema) || forceSchema)
+    const primaryVisualType = normalizeVisualType(visualType)
 
-    if (shouldGenerateSchema) {
+    if (shouldGenerateSchema && !['chart', 'table', 'schema', 'timeline', 'diagram'].includes(primaryVisualType)) {
       imagesToGenerate.push(
         generateSchemaImage({
           schemaType,

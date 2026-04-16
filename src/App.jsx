@@ -64,6 +64,7 @@ function App() {
   const [questionIndex, setQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState([])
   const [boardImages, setBoardImages] = useState([])
+  const [isVisualLoading, setIsVisualLoading] = useState(false)
   const timeoutRef = useRef(null)
   const latestVisualRequestRef = useRef(0)
 
@@ -98,32 +99,79 @@ function App() {
 
     if (!italianVoices.length) return null
 
-    const preferredMatch = italianVoices.find((voice) => {
+    const scoreVoice = (voice) => {
       const name = voice.name.toLowerCase()
-      return name.includes('female') || name.includes('lucia') || name.includes('elsa') || name.includes('cosimo')
+      let score = 0
+
+      if (voice.lang === 'it-IT') score += 8
+      if (voice.localService) score += 3
+      if (name.includes('natural') || name.includes('neural') || name.includes('online')) score += 6
+      if (name.includes('google')) score += 5
+      if (name.includes('microsoft')) score += 5
+      if (name.includes('lucia') || name.includes('elsa') || name.includes('isabella')) score += 5
+      if (name.includes('cosimo') || name.includes('giuseppe')) score += 3
+      if (name.includes('female')) score += 2
+      if (name.includes('espeak') || name.includes('compact') || name.includes('legacy')) score -= 6
+
+      return score
+    }
+
+    const rankedVoices = [...italianVoices].sort((left, right) => scoreVoice(right) - scoreVoice(left))
+
+    return rankedVoices[0] || italianVoices[0]
+  }
+
+  const splitSpeechTextIntoChunks = (value) => {
+    const text = String(value || '').trim()
+    if (!text) return []
+
+    const sentences = text
+      .replace(/\s+/g, ' ')
+      .split(/(?<=[.!?])\s+/)
+      .filter(Boolean)
+
+    const chunks = []
+    let currentChunk = ''
+
+    sentences.forEach((sentence) => {
+      const nextChunk = currentChunk ? `${currentChunk} ${sentence}` : sentence
+      if (nextChunk.length > 220 && currentChunk) {
+        chunks.push(currentChunk)
+        currentChunk = sentence
+      } else {
+        currentChunk = nextChunk
+      }
     })
 
-    return preferredMatch || italianVoices[0]
+    if (currentChunk) {
+      chunks.push(currentChunk)
+    }
+
+    return chunks
   }
 
   const speakText = (text) => {
     if (!('speechSynthesis' in window) || !text) return
 
     window.speechSynthesis.cancel()
-
-    const utterance = new SpeechSynthesisUtterance(text)
     const preferredVoice = pickPreferredItalianVoice()
+    const chunks = splitSpeechTextIntoChunks(text)
 
-    utterance.lang = 'it-IT'
-    utterance.rate = 1.05
-    utterance.pitch = 1.6
+    chunks.forEach((chunk) => {
+      const utterance = new SpeechSynthesisUtterance(chunk)
 
-    if (preferredVoice) {
-      utterance.voice = preferredVoice
-      utterance.lang = preferredVoice.lang
-    }
+      utterance.lang = 'it-IT'
+      utterance.rate = 0.96
+      utterance.pitch = 1.12
+      utterance.volume = 1
 
-    window.speechSynthesis.speak(utterance)
+      if (preferredVoice) {
+        utterance.voice = preferredVoice
+        utterance.lang = preferredVoice.lang
+      }
+
+      window.speechSynthesis.speak(utterance)
+    })
   }
 
   const markdownToSpeechText = (value) => {
@@ -155,6 +203,7 @@ function App() {
 
     const requestId = Date.now()
     latestVisualRequestRef.current = requestId
+    setIsVisualLoading(true)
 
     try {
       const data = await postJson('/api/generate-visuals', {
@@ -163,6 +212,8 @@ function App() {
         subject: profile.subject,
         message,
         reply,
+        imagePrompt: visualPlan?.imagePrompt,
+        visualType: visualPlan?.visualType,
         visualQuery: visualPlan?.visualQuery,
         needsSchema: visualPlan?.needsSchema,
         schemaType: visualPlan?.schemaType,
@@ -175,9 +226,15 @@ function App() {
       const nextImages = Array.isArray(data.imagePreviews) ? data.imagePreviews.slice(0, 4) : []
       if (nextImages.length) {
         setBoardImages(nextImages)
+      } else {
+        setBoardImages([])
       }
     } catch (error) {
       console.error('Errore generazione visual asincrona:', error)
+    } finally {
+      if (latestVisualRequestRef.current === requestId) {
+        setIsVisualLoading(false)
+      }
     }
   }
 
@@ -460,6 +517,8 @@ function App() {
           message: userInput,
           reply,
           visualPlan: {
+            imagePrompt: data.imagePrompt,
+            visualType: data.visualType,
             visualQuery: data.visualQuery,
             needsSchema: data.needsSchema,
             schemaType: data.schemaType,
@@ -592,7 +651,7 @@ function App() {
             </div>
             <div className="whiteboard-layout">
               <div className="board-column">
-                <Whiteboard text={botMessage} images={boardImages} />
+                <Whiteboard text={botMessage} images={boardImages} isVisualLoading={isVisualLoading} />
 
                 <div className="topic-badge-wrap">
                   <div className="topic-badge">

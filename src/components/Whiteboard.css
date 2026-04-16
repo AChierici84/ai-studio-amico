@@ -138,6 +138,29 @@
   gap: 12px;
 }
 
+.whiteboard-visual-loader {
+  margin-top: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 2px solid #D9A52E;
+  background: #FFF6D9;
+  color: #6A4700;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.whiteboard-visual-loader-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid rgba(179, 119, 8, 0.22);
+  border-top-color: #B37708;
+  animation: whiteboardSpinner 0.9s linear infinite;
+}
+
 .preview-card {
   margin: 0;
   border: 2px solid #C8860A;
@@ -167,6 +190,15 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes whiteboardSpinner {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 
