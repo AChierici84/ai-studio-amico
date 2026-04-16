@@ -29,17 +29,134 @@
   padding-right: 8px;
 }
 
-.whiteboard-text {
+.whiteboard-markdown {
   font-size: 22px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #3A2800;
   line-height: 1.65;
   text-align: left;
-  font-style: italic;
-  white-space: pre-line;
+  font-style: normal;
   margin: 0;
   padding: 0;
   animation: fadeIn 0.5s ease-in;
+}
+
+.whiteboard-markdown > :first-child {
+  margin-top: 0;
+}
+
+.whiteboard-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.whiteboard-markdown h1,
+.whiteboard-markdown h2,
+.whiteboard-markdown h3 {
+  color: #2F2100;
+  margin: 10px 0 8px;
+  line-height: 1.3;
+}
+
+.whiteboard-markdown h1 {
+  font-size: 31px;
+}
+
+.whiteboard-markdown h2 {
+  font-size: 27px;
+}
+
+.whiteboard-markdown h3 {
+  font-size: 24px;
+}
+
+.whiteboard-markdown p {
+  margin: 0 0 10px;
+}
+
+.whiteboard-markdown ul,
+.whiteboard-markdown ol {
+  margin: 0 0 12px 24px;
+}
+
+.whiteboard-markdown li {
+  margin-bottom: 4px;
+}
+
+.whiteboard-markdown strong {
+  color: #2A1B00;
+}
+
+.whiteboard-markdown blockquote {
+  margin: 10px 0;
+  padding: 8px 12px;
+  border-left: 4px solid #D9A52E;
+  background: #FFF6D9;
+  border-radius: 6px;
+}
+
+.whiteboard-markdown code {
+  background: rgba(58, 40, 0, 0.08);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.86em;
+}
+
+.whiteboard-markdown pre {
+  background: #FFF4CD;
+  border: 2px solid #D5AB41;
+  border-radius: 10px;
+  padding: 12px;
+  overflow-x: auto;
+}
+
+.whiteboard-markdown pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.whiteboard-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0 14px;
+  font-size: 0.85em;
+}
+
+.whiteboard-markdown th,
+.whiteboard-markdown td {
+  border: 2px solid #D8BC67;
+  padding: 6px 8px;
+}
+
+.whiteboard-markdown th {
+  background: #FFE9A7;
+}
+
+.whiteboard-previews {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.preview-card {
+  margin: 0;
+  border: 2px solid #C8860A;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fffdf4;
+  box-shadow: 0 4px 10px rgba(140, 90, 10, 0.15);
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #fffaf0;
 }
 
 @keyframes fadeIn {

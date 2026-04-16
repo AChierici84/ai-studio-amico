@@ -18,6 +18,156 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.app-container.onboarding-mode {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 18px;
+}
+
+.onboarding-wrap {
+  width: min(1040px, 100%);
+  margin: 0 auto;
+}
+
+.onboarding-card {
+  margin: 0 auto;
+  width: min(960px, 100%);
+  background: rgba(255, 253, 242, 0.95);
+  border: 3px solid #C8860A;
+  border-radius: 18px;
+  box-shadow: 0 14px 32px rgba(72, 44, 0, 0.18);
+  padding: 28px;
+}
+
+.onboarding-card h1,
+.onboarding-card h2 {
+  margin: 0 0 8px;
+  color: #3A2800;
+}
+
+.onboarding-card p {
+  margin: 0 0 16px;
+  color: #5A3F00;
+  font-size: 17px;
+}
+
+.onboarding-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.onboarding-input {
+  flex: 1;
+  min-width: 220px;
+  border: 2px solid #D8C384;
+  border-radius: 10px;
+  font-size: 18px;
+  padding: 12px 14px;
+  color: #3A2800;
+  background: #FFFDF4;
+}
+
+.onboarding-input:focus {
+  outline: none;
+  border-color: #C8860A;
+  box-shadow: 0 0 0 3px rgba(200, 134, 10, 0.17);
+}
+
+.onboarding-primary-button {
+  border: 2px solid #B37708;
+  background: linear-gradient(180deg, #FFD95A 0%, #F6C72A 100%);
+  color: #4E3400;
+  border-radius: 999px;
+  padding: 11px 20px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  box-shadow: 0 7px 14px rgba(163, 109, 0, 0.22);
+}
+
+.onboarding-primary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(163, 109, 0, 0.28);
+}
+
+.onboarding-primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.class-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.class-option {
+  border: 2px solid #D8BC67;
+  background: #FFF6D6;
+  color: #4A3200;
+  border-radius: 12px;
+  padding: 12px 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.class-option:hover,
+.class-option.selected {
+  background: #FFE58E;
+  transform: translateY(-1px);
+}
+
+.area-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.area-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  border: 3px solid #B47A03;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #FFE578 0%, #FFD53A 100%);
+  color: #4D3300;
+  padding: 26px 14px;
+  min-height: 210px;
+  cursor: pointer;
+  box-shadow: 0 10px 18px rgba(142, 89, 0, 0.2);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
+}
+
+.area-option:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 14px 24px rgba(142, 89, 0, 0.28);
+  filter: saturate(1.08);
+}
+
+.area-icon {
+  font-size: 52px;
+  line-height: 1;
+}
+
+.area-title {
+  font-size: 23px;
+  font-weight: 900;
+}
+
+.area-description {
+  font-size: 15px;
+  line-height: 1.35;
+  max-width: 24ch;
+}
+
 .page-logo-wrap {
   width: 100%;
   display: flex;
@@ -163,6 +313,43 @@
   cursor: not-allowed;
 }
 
+.area-row {
+  margin-bottom: 12px;
+}
+
+.mini-area-switch {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mini-area-button {
+  width: 100%;
+  border: 2px solid #D29A1F;
+  background: #FFF3CA;
+  color: #5A3D00;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mini-area-button:hover {
+  background: #FFE7A4;
+  transform: translateY(-1px);
+}
+
+.mini-area-button.is-selected {
+  background: #FFD54A;
+  border-color: #B47A03;
+}
+
 .topic-badge-wrap {
   margin-top: -16px;
   position: relative;
@@ -207,6 +394,31 @@
 
   .page-logo-wrap {
     margin-bottom: -8px;
+  }
+
+  .onboarding-card {
+    padding: 18px;
+  }
+
+  .onboarding-card p {
+    font-size: 16px;
+  }
+
+  .area-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .area-option {
+    min-height: 160px;
+    padding: 20px 12px;
+  }
+
+  .area-icon {
+    font-size: 42px;
+  }
+
+  .area-title {
+    font-size: 20px;
   }
 
   .page-logo {
