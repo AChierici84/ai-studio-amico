@@ -323,6 +323,25 @@
   gap: 8px;
 }
 
+.lesson-actions {
+  margin-top: 12px;
+  display: flex;
+}
+
+.lesson-print-button {
+  width: 100%;
+  justify-content: center;
+  font-size: 14px;
+  padding: 9px 14px;
+  border-color: #B37708;
+  background: linear-gradient(180deg, #FFE085 0%, #F8C83A 100%);
+  color: #4A3200;
+}
+
+.lesson-print-button:hover:not(:disabled) {
+  background: linear-gradient(180deg, #FFE8A8 0%, #FFD75A 100%);
+}
+
 .mini-area-button {
   width: 100%;
   border: 2px solid #D29A1F;

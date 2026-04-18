@@ -49,7 +49,7 @@ function Bot({ action = 'idle' }) {
         break
       case 'speaking':
         setExpression('happy')
-        setGesture('gesturing')
+        setGesture('talking')
         break
       case 'confused':
         setExpression('confused')
@@ -68,12 +68,7 @@ function Bot({ action = 'idle' }) {
   // Gesticulazione periodica mentre parla
   useEffect(() => {
     if (action === 'speaking') {
-      const gestureInterval = setInterval(() => {
-        const gestures = ['gesturing', 'waving', 'pointing']
-        setGesture(gestures[Math.floor(Math.random() * gestures.length)])
-      }, 800)
-
-      return () => clearInterval(gestureInterval)
+      setGesture('talking')
     }
   }, [action])
 

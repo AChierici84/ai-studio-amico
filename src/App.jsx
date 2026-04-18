@@ -65,6 +65,9 @@ function App() {
   const [answers, setAnswers] = useState([])
   const [boardImages, setBoardImages] = useState([])
   const [isVisualLoading, setIsVisualLoading] = useState(false)
+  const [lessonEntries, setLessonEntries] = useState([])
+  const [lessonImages, setLessonImages] = useState([])
+  const [isPrinting, setIsPrinting] = useState(false)
   const timeoutRef = useRef(null)
   const latestVisualRequestRef = useRef(0)
 
@@ -91,6 +94,196 @@ function App() {
 
   const isBadgeActive = interactionPhase === 'quiz'
 
+  const normalizeImageUrls = (images) => {
+    if (!Array.isArray(images)) return []
+
+    return images
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean)
+  }
+
+  const addLessonEntry = (speaker, message) => {
+    const text = String(message || '').trim()
+    if (!text) return
+
+    setLessonEntries((prev) => [
+      ...prev,
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        speaker,
+        text,
+        createdAt: new Date().toISOString()
+      }
+    ])
+  }
+
+  const addLessonImages = (images, source = '') => {
+    const cleanImages = normalizeImageUrls(images)
+    if (!cleanImages.length) return
+
+    setLessonImages((prev) => {
+      const known = new Set(prev.map((item) => item.url))
+      const additions = []
+
+      cleanImages.forEach((url) => {
+        if (!known.has(url)) {
+          known.add(url)
+          additions.push({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            url,
+            source,
+            createdAt: new Date().toISOString()
+          })
+        }
+      })
+
+      return additions.length ? [...prev, ...additions] : prev
+    })
+  }
+
+  const escapeHtml = (value) => {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+  }
+
+  const formatPrintDate = (isoString) => {
+    const date = new Date(isoString)
+    if (Number.isNaN(date.getTime())) return ''
+    return date.toLocaleString('it-IT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const buildAndPrintPdf = (summaryText, nowLabel) => {
+    const summaryHtml = summaryText
+      ? `<section class="summary-section">
+          <h2>Riassunto della lezione</h2>
+          <div class="summary-box">${escapeHtml(summaryText).replace(/\n/g, '<br />')}</div>
+        </section>`
+      : ''
+
+    const imagesHtml = lessonImages.length
+      ? `<section>
+          <h2>Immagini generate</h2>
+          <div class="images">${lessonImages.map((image, idx) => `
+            <figure class="image-item">
+              <img src="${escapeHtml(image.url)}" alt="Immagine didattica ${idx + 1}" />
+              <figcaption>Immagine ${idx + 1}${image.source ? ` · ${escapeHtml(image.source)}` : ''}</figcaption>
+            </figure>`).join('')}
+          </div>
+        </section>`
+      : ''
+
+    const entriesHtml = lessonEntries.length
+      ? `<section>
+          <h2>Trascrizione lezione</h2>
+          <div class="entries">${lessonEntries.map((entry) => {
+            const speakerClass = entry.speaker === 'Amico' ? 'entry entry-bot' : 'entry entry-user'
+            return `<article class="${speakerClass}">
+              <header><strong>${escapeHtml(entry.speaker)}</strong><span>${escapeHtml(formatPrintDate(entry.createdAt))}</span></header>
+              <p>${escapeHtml(entry.text).replace(/\n/g, '<br />')}</p>
+            </article>`
+          }).join('')}</div>
+        </section>`
+      : ''
+
+    const title = `Lezione - ${profile.subject || 'Materia'} - ${profile.studentName || 'Studente'}`
+    const html = `<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtml(title)}</title>
+  <style>
+    :root { --ink:#1e1e1e; --muted:#6f6f6f; --line:#d8d8d8; --bot:#eef6ff; --user:#f7f7f7; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); font-family:"Segoe UI",Arial,sans-serif; background:#f5f5f5; }
+    .page { max-width:980px; margin:0 auto; padding:24px; background:#fff; }
+    h1 { margin:0 0 6px; font-size:28px; }
+    .meta { color:var(--muted); margin-bottom:18px; font-size:13px; line-height:1.6; }
+    h2 { margin:22px 0 8px; font-size:19px; border-bottom:2px solid var(--line); padding-bottom:5px; }
+    .summary-section { margin-bottom:4px; }
+    .summary-box { background:#f0f7ff; border:1px solid #b3d4f5; border-radius:10px; padding:14px 16px; font-size:15px; line-height:1.65; }
+    .entries { display:grid; gap:8px; }
+    .entry { border:1px solid var(--line); border-radius:9px; padding:9px 12px; }
+    .entry-bot { background:var(--bot); } .entry-user { background:var(--user); }
+    .entry header { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:5px; }
+    .entry p { margin:0; line-height:1.5; }
+    .images { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; }
+    .image-item { margin:0; border:1px solid var(--line); border-radius:10px; padding:8px; break-inside:avoid; }
+    .image-item img { width:100%; height:auto; border-radius:6px; display:block; object-fit:contain; max-height:480px; }
+    .image-item figcaption { margin-top:6px; color:var(--muted); font-size:12px; }
+    @media print { body { background:#fff; } .page { max-width:none; padding:10mm; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1>Report lezione</h1>
+    <div class="meta">
+      <div><strong>Studente:</strong> ${escapeHtml(profile.studentName || '---')}</div>
+      <div><strong>Classe:</strong> ${escapeHtml(profile.classLevel || '---')}</div>
+      <div><strong>Materia:</strong> ${escapeHtml(profile.subject || '---')}</div>
+      <div><strong>Area:</strong> ${escapeHtml(getAreaLabel())}</div>
+      <div><strong>Data stampa:</strong> ${escapeHtml(nowLabel)}</div>
+    </div>
+    ${summaryHtml}
+    ${imagesHtml}
+    ${entriesHtml}
+  </main>
+</body>
+</html>`
+
+    const frame = document.createElement('iframe')
+    frame.setAttribute('aria-hidden', 'true')
+    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0'
+
+    const cleanup = () => { if (frame.parentNode) frame.parentNode.removeChild(frame) }
+
+    frame.onload = () => {
+      const fw = frame.contentWindow
+      if (!fw) { cleanup(); window.alert('Impossibile avviare la stampa del PDF.'); return }
+      try { fw.focus(); fw.print() } finally { window.setTimeout(cleanup, 1200) }
+    }
+
+    frame.srcdoc = html
+    document.body.appendChild(frame)
+  }
+
+  const handlePrintLessonPdf = async () => {
+    if (!lessonEntries.length && !lessonImages.length) {
+      window.alert('Non ci sono ancora contenuti da stampare.')
+      return
+    }
+
+    setIsPrinting(true)
+    const nowLabel = formatPrintDate(new Date().toISOString())
+
+    let summaryText = ''
+    try {
+      const data = await postJson('/api/summarize-lesson', {
+        entries: lessonEntries,
+        classLevel: profile.classLevel,
+        subject: profile.subject,
+        area: selectedArea,
+        studentName: profile.studentName
+      })
+      summaryText = data.summary || ''
+    } catch (error) {
+      console.error('Errore generazione riassunto lezione:', error)
+    } finally {
+      setIsPrinting(false)
+    }
+
+    buildAndPrintPdf(summaryText, nowLabel)
+  }
+
   const pickPreferredItalianVoice = () => {
     if (!('speechSynthesis' in window)) return null
 
@@ -102,16 +295,22 @@ function App() {
     const scoreVoice = (voice) => {
       const name = voice.name.toLowerCase()
       let score = 0
+      const isMale = name.includes('male') || name.includes('maschio') || name.includes('man') || name.includes('diego') || name.includes('cosimo') || name.includes('giuseppe')
+      const isYoung = name.includes('young') || name.includes('teen') || name.includes('boy') || name.includes('junior')
+      const isFemale = name.includes('female') || name.includes('femmina') || name.includes('woman') || name.includes('girl') || name.includes('lucia') || name.includes('elsa') || name.includes('isabella')
 
       if (voice.lang === 'it-IT') score += 8
-      if (voice.localService) score += 3
-      if (name.includes('natural') || name.includes('neural') || name.includes('online')) score += 6
+      if (!voice.localService) score += 4
+      if (name.includes('natural') || name.includes('neural') || name.includes('online')) score += 10
+      if (name.includes('enhanced') || name.includes('premium') || name.includes('hq')) score += 4
       if (name.includes('google')) score += 5
       if (name.includes('microsoft')) score += 5
-      if (name.includes('lucia') || name.includes('elsa') || name.includes('isabella')) score += 5
-      if (name.includes('cosimo') || name.includes('giuseppe')) score += 3
-      if (name.includes('female')) score += 2
-      if (name.includes('espeak') || name.includes('compact') || name.includes('legacy')) score -= 6
+      if (isMale) score += 16
+      if (isYoung) score += 7
+      if (isMale && isYoung) score += 6
+      if (isFemale) score -= 18
+      if (name.includes('espeak') || name.includes('compact') || name.includes('legacy') || name.includes('sapi')) score -= 10
+      if (voice.default) score += 1
 
       return score
     }
@@ -135,7 +334,7 @@ function App() {
 
     sentences.forEach((sentence) => {
       const nextChunk = currentChunk ? `${currentChunk} ${sentence}` : sentence
-      if (nextChunk.length > 220 && currentChunk) {
+      if (nextChunk.length > 340 && currentChunk) {
         chunks.push(currentChunk)
         currentChunk = sentence
       } else {
@@ -155,14 +354,22 @@ function App() {
 
     window.speechSynthesis.cancel()
     const preferredVoice = pickPreferredItalianVoice()
-    const chunks = splitSpeechTextIntoChunks(text)
+    const chunks = text.length > 260 ? splitSpeechTextIntoChunks(text) : [text]
 
     chunks.forEach((chunk) => {
       const utterance = new SpeechSynthesisUtterance(chunk)
+      const voiceName = preferredVoice?.name?.toLowerCase() || ''
+      const isLikelyMaleVoice = voiceName.includes('male') || voiceName.includes('maschio') || voiceName.includes('man') || voiceName.includes('diego') || voiceName.includes('cosimo') || voiceName.includes('giuseppe')
+      const isLikelyYoungVoice = voiceName.includes('young') || voiceName.includes('teen') || voiceName.includes('boy') || voiceName.includes('junior')
+      const isLikelyNaturalVoice = voiceName.includes('natural') || voiceName.includes('neural') || voiceName.includes('online') || voiceName.includes('enhanced') || voiceName.includes('premium')
 
       utterance.lang = 'it-IT'
-      utterance.rate = 0.96
-      utterance.pitch = 1.12
+      utterance.rate = isLikelyMaleVoice
+        ? (isLikelyYoungVoice ? (isLikelyNaturalVoice ? 1.04 : 1.01) : (isLikelyNaturalVoice ? 1 : 0.97))
+        : (isLikelyNaturalVoice ? 1.01 : 0.98)
+      utterance.pitch = isLikelyMaleVoice
+        ? (isLikelyYoungVoice ? 1.03 : 0.97)
+        : 1
       utterance.volume = 1
 
       if (preferredVoice) {
@@ -185,11 +392,16 @@ function App() {
       .replace(/^\s*\d+\.\s+/gm, '') // ordered list markers
       .replace(/[|]/g, ' ') // table separators
       .replace(/[*_~>#]/g, '') // emphasis and quote markers
+      .replace(/\n{2,}/g, '. ') // paragraph pause
+      .replace(/\n/g, ', ') // short pause on line break
+      .replace(/\s+([,.;!?])/g, '$1') // no spaces before punctuation
       .replace(/\s+/g, ' ')
       .trim()
   }
 
   const setSpeakingMessage = (message, action = 'speaking', options = {}) => {
+    addLessonEntry('Amico', message)
+    addLessonImages(options.images, 'Risposta AI')
     setBotMessage(message)
     setBoardImages(Array.isArray(options.images) ? options.images : [])
     setBotAction(action)
@@ -225,6 +437,7 @@ function App() {
 
       const nextImages = Array.isArray(data.imagePreviews) ? data.imagePreviews.slice(0, 4) : []
       if (nextImages.length) {
+        addLessonImages(nextImages, 'Visuale generata')
         setBoardImages(nextImages)
       } else {
         setBoardImages([])
@@ -292,6 +505,8 @@ function App() {
     setSelectedArea(areaId)
     setConversationHistory([])
     setBoardImages([])
+    setLessonEntries([])
+    setLessonImages([])
     resetQuizState()
 
     if (areaId === 'quiz') {
@@ -436,6 +651,8 @@ function App() {
 
   const sendMessage = async (userInput) => {
     if (!userInput.trim()) return
+
+    addLessonEntry('Studente', userInput)
 
     setIsThinking(true)
     setBotAction('thinking')
@@ -705,6 +922,17 @@ function App() {
                         {area.label}
                       </button>
                     ))}
+                  </div>
+
+                  <div className="lesson-actions">
+                    <button
+                      type="button"
+                      className="level-action-button lesson-print-button"
+                      onClick={handlePrintLessonPdf}
+                      disabled={isPrinting || (!lessonEntries.length && !lessonImages.length)}
+                    >
+                      {isPrinting ? 'Sto generando il riassunto…' : 'Fine lezione · Stampa PDF'}
+                    </button>
                   </div>
                 </aside>
 

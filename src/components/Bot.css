@@ -77,6 +77,10 @@
 
 .bot-arm-left.idle    { animation: arm-l-idle    2.5s ease-in-out infinite; }
 .bot-arm-left.thinking { animation: arm-l-think   1.2s ease-in-out infinite; }
+.bot-arm-left.talking {
+  animation: none;
+  transform: rotate(0deg);
+}
 .bot-arm-left.gesturing,
 .bot-arm-left.waving,
 .bot-arm-left.pointing { animation: arm-l-wave    0.55s ease-in-out infinite; }
@@ -109,6 +113,10 @@
 
 .bot-arm-right.idle    { animation: arm-r-idle    2.5s ease-in-out infinite 0.4s; }
 .bot-arm-right.thinking { animation: arm-r-think   1.2s ease-in-out infinite 0.2s; }
+.bot-arm-right.talking {
+  animation: none;
+  transform: rotate(0deg);
+}
 .bot-arm-right.gesturing,
 .bot-arm-right.waving,
 .bot-arm-right.pointing { animation: arm-r-wave    0.55s ease-in-out infinite 0.15s; }
